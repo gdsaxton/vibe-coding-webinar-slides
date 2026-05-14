@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibe Coding for Accountants — Presenter Console</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f2ee;
+    --surface: #ffffff;
+    --sidebar-bg: #f0ede8;
+    --sidebar-bg2: #e8e4de;
+    --sidebar-text: #666056;
+    --sidebar-active: #111111;
+    --sidebar-active-bg: #e2ddd6;
+    --sidebar-demo: #d4a843;
+    --text-primary: #111111;
+    --text-secondary: #555555;
+    --text-muted: #888888;
+    --accent: #a51c30;
+    --accent-light: #fce8ea;
+    --demo-color: #c08020;
+    --demo-bg: #fffaed;
+    --demo-border: #e8c870;
+    --progress-bg: #ddd8d0;
+    --border: #e4e0db;
+    --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.13);
+    --font-sans: 'DM Sans', sans-serif;
+    --font-serif: 'DM Serif Display', serif;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+  }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  #app {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: 1fr 60px;
+    height: 100vh;
+    gap: 0;
+    transition: grid-template-columns 0.22s ease;
+  }
+
+  #app.sidebar-hidden {
+    grid-template-columns: 0px 1fr;
+  }
+
+  /* Sidebar toggle button */
+  #sidebar-toggle {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s, left 0.22s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    line-height: 1;
+  }
+
+  #sidebar-toggle:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+
+  #app.sidebar-hidden #sidebar-toggle { left: 8px; }
+
+  /* ── Sidebar ─────────────────────────────────────────── */
+  #sidebar {
+    grid-row: 1 / 3;
+    background: var(--sidebar-bg);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 0 16px;
+    border-right: 1px solid var(--border);
+    transition: width 0.22s ease, padding 0.22s ease;
+  }
+
+  #sidebar.hidden {
+    width: 0 !important;
+    padding: 0;
+    overflow: hidden;
+    border-right: none;
+  }
+
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: #ccc8c0; border-radius: 2px; }
+
+  .sidebar-header {
+    padding: 0 14px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .sidebar-header .webinar-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a09880;
+    line-height: 1.4;
+  }
+
+  .part-label {
+    padding: 10px 14px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #aaa090;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .nav-item:hover { background: #e6e2da; }
+
+  .nav-item.active {
+    background: var(--sidebar-active-bg);
+    border-left-color: var(--accent);
+  }
+
+  .nav-item.demo-item { border-left-color: transparent; }
+  .nav-item.demo-item.active { border-left-color: var(--demo-color); }
+
+  .nav-num {
+    font-size: 9px;
+    font-weight: 600;
+    color: #bbb8b0;
+    min-width: 18px;
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nav-item.active .nav-num { color: #999; }
+
+  .nav-title {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--sidebar-text);
+    line-height: 1.35;
+  }
+
+  .nav-item.active .nav-title { color: var(--sidebar-active); font-weight: 600; }
+  .nav-item.demo-item .nav-title { color: var(--demo-color); }
+  .nav-item.demo-item.active .nav-title { color: var(--demo-color); font-weight: 600; }
+
+  .demo-dot {
+    display: inline-block;
+    width: 5px; height: 5px;
+    background: var(--demo-color);
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  /* ── Main slide canvas ───────────────────────────────── */
+  #main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 40px;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  .slide-card {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 960px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .slide-card.demo-slide {
+    border-top: 5px solid var(--demo-color);
+  }
+
+  .slide-card:not(.demo-slide) {
+    border-top: 5px solid var(--accent);
+  }
+
+  .slide-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px 0;
+  }
+
+  .slide-part {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .demo-badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: var(--demo-bg);
+    border: 1px solid var(--demo-border);
+    border-radius: 20px;
+    padding: 3px 12px 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--demo-color);
+    letter-spacing: 0.03em;
+  }
+
+  .demo-badge .dot { width: 6px; height: 6px; background: var(--demo-color); border-radius: 50%; }
+  .demo-slide .demo-badge { display: flex; }
+
+  .slide-content {
+    padding: 20px 32px 28px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slide-title {
+    font-family: var(--font-serif);
+    font-size: 46px;
+    font-weight: 400;
+    line-height: 1.12;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  .demo-slide .slide-title { color: var(--accent); }
+
+  .slide-body {
+    font-size: 21px;
+    font-weight: 400;
+    line-height: 1.55;
+    color: #2a2a2a;
+    flex: 1;
+  }
+
+  .slide-body ul, .slide-body ol {
+    padding-left: 1.4em;
+  }
+
+  .slide-body li {
+    margin-bottom: 8px;
+  }
+
+  .slide-body strong { font-weight: 600; color: var(--text-primary); }
+  .slide-body em { font-style: italic; color: #444; }
+
+  /* Demo prompt box */
+  .demo-prompt-wrap {
+    margin-top: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .demo-prompt-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .demo-prompt-box {
+    background: #f4f2ee;
+    border: 1px solid #ddd9d2;
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #2a2a2a;
+    white-space: pre-wrap;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 280px;
+  }
+
+  .demo-prompt-box::-webkit-scrollbar { width: 4px; }
+  .demo-prompt-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+  .copy-btn {
+    align-self: flex-start;
+    margin-top: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  .copy-btn:hover { background: #8a0020; }
+  .copy-btn:active { transform: scale(0.97); }
+  .copy-btn.copied { background: #2a9e50; }
+
+  /* ── Bottom bar ──────────────────────────────────────── */
+  #bottom-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 18px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .nav-btn:hover { background: var(--bg); border-color: #ccc; }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  #slide-counter {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  #progress-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--progress-bg);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  #progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* ── Scale slider ────────────────────────────────────── */
+  #scale-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+  }
+
+  #scale-wrap label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  #scale-slider {
+    -webkit-appearance: none;
+    width: 90px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--progress-bg);
+    outline: none;
+    cursor: pointer;
+  }
+
+  #scale-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  #scale-slider::-webkit-slider-thumb:hover { background: #8a0020; }
+
+  #scale-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    min-width: 34px;
+    text-align: left;
+  }
+
+  #timer {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    min-width: 52px;
+    text-align: right;
+    transition: color 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  #timer:hover { color: var(--accent); }
+  #timer.running { color: var(--text-primary); }
+  #timer.paused { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <button id="sidebar-toggle" title="Toggle sidebar">☰</button>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="webinar-title">Vibe Coding for Accountants</div>
+    </div>
+    <div id="nav-list"></div>
+  </nav>
+
+  <main id="main">
+    <div class="slide-card" id="slide-card">
+      <div class="slide-top-bar">
+        <span class="slide-part" id="slide-part"></span>
+        <span class="demo-badge"><span class="dot"></span>LIVE DEMO</span>
+      </div>
+      <div class="slide-content">
+        <h1 class="slide-title" id="slide-title"></h1>
+        <div class="slide-body" id="slide-body"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="bottom-bar">
+    <button class="nav-btn" id="btn-prev">← Prev</button>
+    <button class="nav-btn" id="btn-next">Next →</button>
+    <span id="slide-counter"></span>
+    <div id="progress-wrap"><div id="progress-bar"></div></div>
+    <div id="scale-wrap">
+      <label for="scale-slider">Size</label>
+      <input type="range" id="scale-slider" min="70" max="130" value="100" step="5">
+      <span id="scale-val">100%</span>
+    </div>
+    <span id="timer" title="Click to start/stop timer">0:00</span>
+  </div>
+</div>
+
+<script>
+// ── EDIT SLIDES HERE ─────────────────────────────────────────────────────────
+// PASTE THIS ARRAY AS THE VALUE OF `const slides = [...]` IN YOUR PRESENTER CONSOLE HTML FILE
+
+const slides = 
+[
+  {
+    "part": "Part I — Introduction",
+    "title": "Vibe Coding for Accountants",
+    "body": "Everything You Need to Know<br><br><strong>Dr. Gregory Saxton</strong><br>Professor of Accounting, Schulich School of Business<br>Co-Director, Schulich/CPA Ontario Centre in Digital Financial Information"
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "What we'll cover today",
+    "body": "<ul><li>What vibe coding is</li><li>How the basic loop works</li><li>Live demos — built together</li><li>Risks and next steps</li></ul>"
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "The problem",
+    "body": "Accountants are drowning in repetitive data work.<br><br>Data cleaning. Reconciliations. Variance reports. Audit samples."
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "What if you could just describe what you want?",
+    "body": "<em>\"Build me a tool that checks whether our GL matches the sub-ledger.\"</em><br><br><em>\"Build a script that flags every transaction just below the approval threshold.\"</em><br><br><em>\"Build a dashboard that compares actuals to budget and highlights variances over 10%.\"</em><br><br>That's vibe coding."
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "What is vibe coding?",
+    "body": "The practice of using generative AI to build working scripts, tools, and workflows through natural-language prompts — rather than traditional programming.<br><br>Describe. Generate. Test. Ship."
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "Vibe coding vs. traditional programming",
+    "body": "<ul><li>No syntax. No setup.</li><li>Describe outcomes, not mechanisms.</li><li>Iterate by talking, not compiling.</li><li>Fix errors by asking.</li></ul>"
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "Why now?",
+    "body": "Generative AI crossed a threshold in 2024–25.<br><br>Code generation is now reliable enough to be genuinely useful for non-programmers."
+  },
+  {
+    "part": "Part I — Introduction",
+    "title": "The shift",
+    "body": "From <strong>tool user</strong><br>to <em>workflow designer and validator</em><br><br>You don't write the code.<br>You direct it. And you judge whether it's correct."
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "The basic loop",
+    "body": "<ul><li><strong>Prompt</strong></li><li><strong>Generate</strong></li><li><strong>Test</strong></li><li><strong>Refine</strong></li></ul>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "What kinds of code does it produce?",
+    "body": "<ul><li><strong>Python</strong> — data, analysis, automation</li><li><strong>Excel / VBA</strong> — macros, formulas</li><li><strong>SQL</strong> — queries, joins</li><li><strong>HTML / JS</strong> — browser tools</li><li><strong>R, Bash, PowerShell</strong> — and more</li></ul>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "You don't need to understand the code",
+    "body": "You need to understand the <em>output</em>.<br><br>Asking AI to explain its own code is one of the most powerful features.<br><blockquote style=\"border-left:3px solid #ccc;margin:12px 0 12px 24px;padding:8px 16px;color:#555;\"><em>\"Walk me through what this script does, step by step, in plain English.\"</em></blockquote>is a valid and important prompt."
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Live demo 1: Gen Alpha slang app",
+    "body": "One paragraph of plain English. ~300 lines of working code.<br><br>Live at: <strong>gdsaxton.github.io/gen-alpha-slang</strong>",
+    "demo": "Build a spaced repetition flashcard app for learning Gen Alpha slang. Runs entirely in the browser as a single HTML file. Include at least 15 real Gen Alpha terms with definitions. Show a term, let the user reveal the definition, then rate how well they knew it (easy / hard / no idea), and use that to schedule when the card comes back. Make it look fun and modern."
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Domain expertise catches what the AI misses",
+    "body": "<div style=\"display:flex;align-items:center;gap:32px;\"><img src=\"images/You're_cooked.png\" style=\"height:340px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);flex-shrink:0;\" /><div style=\"font-size:20px;line-height:1.6;\">My son tested the live app the day it launched.<br><br>18 slang terms generated correctly.<br><br>One wrong — and only someone with knowledge of Gen Alpha slang would know it.<br><br>The AI was confident. The AI was wrong.</div></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Deploying for free: GitHub Pages",
+    "body": "<ol><li>Create a GitHub account</li><li>Create a public repository</li><li>Upload <strong>index.html</strong> and commit</li><li>Settings → Pages → set branch → Save</li></ol>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "By the way...",
+    "body": "The presenter console you've been looking at?<br><br><span style=\"background:#fff3cd;padding:2px 8px;border-radius:4px;font-weight:600;\">Vibe coded.</span>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Live demo 2: Best city in the world",
+    "body": "One paragraph of plain English. A personalized city-matching quiz.",
+    "demo": "Build an interactive 'best city in the world for me' web app as a single HTML file. The user answers 8-10 questions about their preferences — climate, cost of living, walkability, nightlife, access to nature, safety, culture — and the app scores 20+ cities around the world and shows the top 5 matches with a percentage score and a one-sentence explanation for each. Runs entirely in the browser with no external data."
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "ChatGPT",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/ChatGPT.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "ChatGPT Codex",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Codex.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Lovable",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Lovable.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "v0",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/vo.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Bolt",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Bolt.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Replit",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Replit.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "GitHub Copilot",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Copilot.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part II — How It Works",
+    "title": "Gemini Code Assist",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Gemini_Code_Assist.png\" style=\"width:100%;display:block;\" /></div>"
+  },
+  {
+    "part": "Part III — Prompting",
+    "title": "Anatomy of a good prompt",
+    "body": "<ul><li><strong>Context</strong></li><li><strong>Task</strong></li><li><strong>Output</strong></li><li><strong>Example</strong></li></ul>"
+  },
+  {
+    "part": "Part III — Prompting",
+    "title": "One-slide prompting framework",
+    "body": "<em>I have [describe your data].</em><br><em>Build me a tool that [describe what it does].</em><br><em>The output should be [describe the result].</em><br><em>Here is an example: [paste a row or scenario].</em><br><br>Start there. Iterate from the response."
+  },
+  {
+    "part": "Part III — Prompting",
+    "title": "Common beginner mistakes",
+    "body": "<ul><li>Too vague — be specific</li><li>No example data — AI guesses wrong</li><li>Giving up after one try</li><li>Sonnet 4.6 thin? Try Opus 4.7</li></ul>"
+  },
+  {
+    "part": "Part III — Prompting",
+    "title": "Vibe coding isn't just for non-coders",
+    "body": "Even if you know Python, you use vibe coding to skip the tedious parts.<br><br><em>\"Write Python code I can run in a Jupyter notebook that connects to my MongoDB collection of IRS Form 990 filings, pulls all records into a Pandas dataframe, and flattens all nested columns into a single analysis-ready table.\"</em><br><br><em>\"Write Python code I can run in a Jupyter notebook that takes a folder of 200 PDF invoices, extracts vendor name, date, and total, and outputs a single clean Excel file.\"</em><br><br>That's 20–30 minutes of work each. Seconds here.",
+    "demo": "Write Python code I can run in a Jupyter notebook that connects to my MongoDB collection of IRS Form 990 filings, pulls all records into a Pandas dataframe, and flattens all nested columns into a single analysis-ready table."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Data cleaning and validation",
+    "body": "<em>\"Write Python code that takes this Excel file, standardizes all date formats, removes duplicate rows, and flags any missing fields in a new column.\"</em><br><br>Tedious manually. Trivial with AI."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Variance analysis",
+    "body": "<em>\"Build a tool that compares this month's expenses to last month, flags any category where variance exceeds 10%, and outputs a plain-English summary of the biggest movers.\"</em>"
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Reconciliations and anomaly detection",
+    "body": "<em>\"Build a script that takes these two CSV files — GL and sub-ledger — matches them on transaction ID, and flags every mismatch, duplicate, and transaction just below the approval threshold.\"</em>"
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Audit testing and sampling",
+    "body": "<em>\"Build a tool that tests this full population of 4,000 transactions for anomalies — round numbers, weekend postings, duplicates — and outputs a workpaper-ready summary.\"</em>"
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Custom reporting",
+    "body": "Build tools that can generate outputs tailored to your stakeholders.<br><br>Dashboards, scorecards, alerts.<br><br>Tools that replace $20–40/month subscriptions."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Regulatory and compliance reporting",
+    "body": "<em>\"Build a script that reads our GL export, maps each account to the correct regulatory line item using this lookup table, and outputs a filing-ready CSV.\"</em><br><br>Lowest-visibility, highest-value application."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Internal decision tools",
+    "body": "<em>\"Build a dashboard that pulls from this spreadsheet, shows actuals vs. budget by department, and sends an email alert when any line item exceeds variance by 15%.\"</em><br><br>Built in an afternoon, not a sprint."
+  },
+  {
+    "part": "Part IV — Use Cases",
+    "title": "Live demo 3: Personal CPA website",
+    "body": "One prompt. A website worth $2,000–5,000 to commission.<br><br>Live at: <strong>gdsaxton.github.io/sarah-chen-cpa</strong>",
+    "demo": "Build a complete, polished one-page personal CPA website as a single HTML file. The CPA is Sarah Chen, CPA, CGA, based in Toronto, specializing in small business accounting, tax planning, and bookkeeping for entrepreneurs and service businesses.\n\nInclude: a hero section with a tagline and call-to-action button, a services section with three or four offerings, an about section with a short bio, a simple process or how-it-works section, and a contact section with a form.\n\nShould look like something worth paying a web designer $2,000 for — clean typography, professional color scheme (navy and gold or similar), subtle hover animations, fully mobile-responsive layout. Self-contained single file, no external dependencies except Google Fonts."
+  },  
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Live demo 4: Personal CPA Website — Mimicked Style",
+    "body": "One prompt. Mimic a specific visual style.<br><br>Live at: <strong>gdsaxton.github.io/sarah-chen-cpa-cra</strong>",
+    "demo": "Build me a single-page personal CPA website that looks exactly like the Canada Revenue Agency website at https://www.canada.ca/en/revenue-agency.html. Replicate the visual design faithfully: the Government of Canada red and black header with the maple leaf wordmark, the white body with the Canada.ca navigation bar, the 'Most requested' section with bullet links, the 'Services and information' grid with bold category headings and short descriptions, and the footer with the Government of Canada logo. Replace all CRA content with content for a fictional solo CPA named Sarah Chen, CPA, CPA Ontario member, based in Toronto, specializing in small business tax, GST/HST filing, and bookkeeping. Her 'Most requested' links should be things like 'Book a free consultation,' 'Upload your tax documents,' and '2024 tax checklist.' Her services grid should cover personal tax, corporate tax, GST/HST, payroll, bookkeeping, and CRA audit support. Keep the Government of Canada branding and visual style intact — the joke is that it looks exactly like an official government site. Run entirely in the browser as a single HTML artifact." 
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "The phishing lesson",
+    "body": "<ul><li>CPAs are high-value targets</li><li>One prompt builds a convincing clone</li><li>Watch for domain spoofing</li><li>Awareness is the defense</li></ul>"
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Live demo 5: Retirement planning tool",
+    "body": "One paragraph. Eight specific requirements. A tool CPAs can use with clients.<br><br>Live at: <strong>gdsaxton.github.io/retirement-planning-tool</strong>",
+    "demo": "Build an interactive retirement planning tool as a single HTML file. Inputs: current age, retirement age, current savings, monthly contribution, expected annual return, monthly retirement spending (in today's dollars), inflation rate, and monthly pension income.\n\nOutputs: a projection chart showing savings over time, four metric cards (target nest egg, projected nest egg, monthly income in retirement, years of funding), and a what-if panel with sliders for return rate and retirement age.\n\nShow both today's dollars and nominal amounts where relevant — e.g. $5,000/mo today vs. what that becomes at retirement. Tone should be clean and reassuring. No external libraries — runs entirely in the browser."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Live demo 6: Full-population transaction testing tool",
+    "body": "Auditors sample because testing everything was impractical.<br><br>Not anymore.",
+    "demo": "Build a full-population transaction testing tool as a single HTML file. Include a 'Load sample data' button that generates 200 realistic transactions with planted anomalies. Run six tests: duplicate transactions, round-number amounts, sequence gaps, just-below-threshold amounts (flag anything within 5% below a round number that could be an approval limit: $5,000, $10,000, $25,000), weekend and holiday postings (use Canadian statutory holidays), and unusual vendors (one-word names, names with only numbers, or names matching common shell company patterns). For each test, show a metric card with the flag count. When a card is clicked, show a drilldown table of the flagged transactions. Add a risk banner at the top: High if any just-below-threshold or unusual vendor flags exist, Medium if weekend/holiday or sequence gap flags exist, Low otherwise. Professional design, no external dependencies."
+  },
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Using Projects in Claude and ChatGPT",
+    "body": "<ul><li>No Project — re-explain every time</li><li>With Project — AI knows your context</li><li>Role, constraints, data structure</li><li>Set one up before your first task</li></ul>"
+  },
+  
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Sample Project",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Accounting Automation Scripts.png\" style=\"width:100%;display:block;\" /></div>"
+  },  
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Sample Project",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Financial Statement Analysis Toolkit.png\" style=\"width:100%;display:block;\" /></div>"
+  }, 
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Sample Project",
+    "body": "<div style=\"margin:-20px -32px -28px;overflow:hidden;border-radius:0 0 8px 8px;\"><img src=\"images/Audit Planning - Not-for-Profit Client.png\" style=\"width:100%;display:block;\" /></div>"
+  },     
+  {
+    "part": "Part IV — Accounting Use Cases",
+    "title": "Live demo 7: Sunshine List outlier analysis",
+    "body": "Real public data. Built to answer a real question: what is fair compensation?<br><br>Live at: <strong>gdsaxton.github.io/sunshine-list-outlier-analysis</strong>",
+    "demo": "Build a single-file HTML app to analyze the Ontario Sunshine List — public sector salaries over $100,000. Include a CSV upload button to load the data. The key columns are Sector, Employer, First Name, Last Name, Job Title, and Salary.\n\nAdd these features:\n- A dropdown to filter by Sector, with \"Hospitals & Public Health Boards\" pre-selected\n- A checkbox list to select one or more Job Titles, with any title containing \"Nurse Practitioner\" or \"Advanced Practice Nurse\" pre-selected\n- Four tabs, all reflecting the current sector and job title selection:\n  1. Table — all selected employees with Name, Employer, Job Title, Salary, and an outlier flag\n  2. Histogram — salary distribution for selected employees\n  3. Outliers — list of flagged employees only\n  4. Summary — count, mean, median, min, max salary, and a count of outliers\n- Flag outliers: within each Sector + Job Title group (minimum 4 people), flag anyone whose salary is more than 3 times the interquartile range above the 75th percentile. Each person is compared only to peers with the same job title in the same sector.\n\nMake it look clean and professional."
+  },
+  {
+    "part": "Part V — Risks",
+    "title": "The AI is confident even when it's wrong",
+    "body": "<ul><li><strong>Silent errors</strong></li><li><strong>Wrong by one word</strong></li><li><strong>Wrong peer group</strong></li><li><strong>Wrong judgment call</strong></li></ul><br>You are the validator."
+  },
+  {
+    "part": "Part V — Risks",
+    "title": "Confidentiality and professional responsibility",
+    "body": "<ul><li>Never paste real client data</li><li>Test on anonymized data only</li><li>Check your firm's AI policy</li><li>You are responsible for the output</li></ul>"
+  },
+  {
+    "part": "Part VI — Where to Go From Here",
+    "title": "Your next steps",
+    "body": "<ol><li>Pick one repetitive weekly task</li><li>Write a prompt using the framework</li><li>Test on a small real sample</li><li>Validate the output yourself</li><li>Iterate until it is right</li><li>Save the prompt for next time</li></ol>"
+  },
+  {
+    "part": "Closing",
+    "title": "Key takeaways",
+    "body": "<ul><li>Build tools — no coding experience needed</li><li>Core skill: prompting and validation</li><li>Silent errors are the real risk</li><li>Start small. Build something this week.</li></ul>"
+  },
+  {
+    "part": "Closing",
+    "title": "Do I still need to learn coding?",
+    "body": "Yes — basic fluency pays off.<br><br><ul><li>Silent errors are invisible without it</li><li>Tourist vs. translator — know the difference</li><li>Learn to <em>read</em> code, not write it</li></ul>"
+  },
+  {
+    "part": "Closing",
+    "title": "Thank you",
+    "body": "<strong>Dr. Gregory Saxton</strong><br>Schulich School of Business, York University<br><br>Browse all demo apps:<br><strong>gdsaxton.github.io/vibe-coding-webinar</strong><br><br>Slides and resources available after the webinar.<br>Verified participation confirmation sent by email immediately after webinar."
+  }
+]
+;
+// ── END SLIDES ───────────────────────────────────────────────────────────────
+
+let current = 0;
+let timerSeconds = 0;
+let timerRunning = false;
+let timerInterval = null;
+
+// ── Build sidebar nav ─────────────────────────────────────
+function buildNav() {
+  const list = document.getElementById('nav-list');
+  let lastPart = null;
+
+  slides.forEach((s, i) => {
+    if (s.part !== lastPart) {
+      const label = document.createElement('div');
+      label.className = 'part-label';
+      label.textContent = s.part;
+      list.appendChild(label);
+      lastPart = s.part;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (s.demo ? ' demo-item' : '');
+    item.dataset.index = i;
+
+    const num = document.createElement('span');
+    num.className = 'nav-num';
+    num.textContent = i + 1;
+
+    const title = document.createElement('span');
+    title.className = 'nav-title';
+    title.textContent = s.title;
+
+    if (s.demo) {
+      const dot = document.createElement('span');
+      dot.className = 'demo-dot';
+      item.appendChild(dot);
+    }
+
+    item.appendChild(num);
+    item.appendChild(title);
+    item.addEventListener('click', () => goTo(i));
+    list.appendChild(item);
+  });
+}
+
+// ── Render slide ──────────────────────────────────────────
+function render() {
+  const s = slides[current];
+  const card = document.getElementById('slide-card');
+  const total = slides.length;
+
+  // Demo class
+  card.classList.toggle('demo-slide', !!s.demo);
+
+  document.getElementById('slide-part').textContent = s.part;
+  document.getElementById('slide-title').textContent = s.title;
+
+  const bodyEl = document.getElementById('slide-body');
+
+  if (s.demo) {
+    bodyEl.innerHTML = `
+      <div>${s.body}</div>
+      <div class="demo-prompt-wrap">
+        <div class="demo-prompt-label">Live Demo Prompt</div>
+        <div class="demo-prompt-box">${escHtml(s.demo)}</div>
+        <button class="copy-btn" onclick="copyPrompt(this, ${current})">Copy Prompt</button>
+      </div>`;
+  } else {
+    bodyEl.innerHTML = s.body;
+  }
+
+  // Counter + progress
+  document.getElementById('slide-counter').textContent = `${current + 1} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${((current + 1) / total) * 100}%`;
+
+  // Nav buttons
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === total - 1;
+
+  // Sidebar active state
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.index) === current);
+  });
+
+  // Scroll active nav item into view
+  const activeItem = document.querySelector(`.nav-item[data-index="${current}"]`);
+  if (activeItem) activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function goTo(i) {
+  current = Math.max(0, Math.min(slides.length - 1, i));
+  render();
+}
+
+function escHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function copyPrompt(btn, idx) {
+  navigator.clipboard.writeText(slides[idx].demo).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy Prompt';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ── Timer ─────────────────────────────────────────────────
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+document.getElementById('timer').addEventListener('click', () => {
+  const el = document.getElementById('timer');
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    el.classList.remove('running');
+    el.classList.add('paused');
+  } else {
+    timerRunning = true;
+    el.classList.add('running');
+    el.classList.remove('paused');
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      updateTimerDisplay();
+    }, 1000);
+  }
+});
+
+// ── Keyboard nav ──────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') goTo(current + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp'   || e.key === 'PageUp')   goTo(current - 1);
+});
+
+document.getElementById('btn-prev').addEventListener('click', () => goTo(current - 1));
+document.getElementById('btn-next').addEventListener('click', () => goTo(current + 1));
+
+// ── Sidebar toggle ────────────────────────────────────────
+const app = document.getElementById('app');
+const sidebarEl = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('sidebar-toggle');
+let sidebarVisible = true;
+
+toggleBtn.addEventListener('click', () => {
+  sidebarVisible = !sidebarVisible;
+  app.classList.toggle('sidebar-hidden', !sidebarVisible);
+  sidebarEl.classList.toggle('hidden', !sidebarVisible);
+  toggleBtn.textContent = sidebarVisible ? '☰' : '▶';
+  toggleBtn.title = sidebarVisible ? 'Hide sidebar' : 'Show sidebar';
+});
+
+// ── Scale slider ──────────────────────────────────────────
+const scaleSlider = document.getElementById('scale-slider');
+const scaleVal = document.getElementById('scale-val');
+const mainEl = document.getElementById('main');
+
+function applyScale(v) {
+  // Scale the slide card using CSS transform on #main's child
+  const card = document.getElementById('slide-card');
+  card.style.transform = `scale(${v / 100})`;
+  card.style.transformOrigin = 'center center';
+  scaleVal.textContent = v + '%';
+}
+
+scaleSlider.addEventListener('input', () => applyScale(parseInt(scaleSlider.value)));
+
+// ── Init ──────────────────────────────────────────────────
+buildNav();
+render();
+updateTimerDisplay();
+</script>
+</body>
+</html>
